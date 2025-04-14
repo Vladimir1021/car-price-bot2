@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 # Загрузка переменных окружения
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv(7556724021:AAFIXoUrussVLFuN4yUZpwIijer7lrov1Tg)
-OPENAI_API_KEY = os.getenv(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)
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Инициализация OpenAI
 openai.api_key = OPENAI_API_KEY
