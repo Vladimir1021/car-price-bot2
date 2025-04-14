@@ -77,5 +77,4 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())  # Правильный запуск асинхронного метода
-
+    asyncio.run(main())  # Заменили вызов run_polling на asyncio.run(main()) для правильной работы с асинхронным кодом
