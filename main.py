@@ -4,6 +4,7 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from dotenv import load_dotenv
+import asyncio
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -76,10 +77,5 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    asyncio.run(main())  # Правильный запуск асинхронного метода
 
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
