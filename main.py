@@ -1,5 +1,6 @@
 import os
 import openai
+import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from dotenv import load_dotenv
@@ -7,8 +8,8 @@ from dotenv import load_dotenv
 # Загрузка переменных окружения
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv "7556724021:AAFIXoUrussVLFuN4yUZpwIijer7lrov1Tg"
-OPENAI_API_KEY = os.getenv "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"
+TELEGRAM_TOKEN = os.getenv(7556724021:AAFIXoUrussVLFuN4yUZpwIijer7lrov1Tg)
+OPENAI_API_KEY = os.getenv(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)
 
 # Инициализация OpenAI
 openai.api_key = OPENAI_API_KEY
@@ -50,7 +51,7 @@ async def handle_message(update: Update, context: CallbackContext):
 async def help_command(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Я помогу вам рассчитать стоимость автомобиля.\n"
-        "Введите информацию о машине, как показано в примере:\n\n"
+        "Введите информацию о машине, как показано в примере:\n"
         "- Марка\n"
         "- Модель\n"
         "- Год выпуска\n"
@@ -60,7 +61,7 @@ async def help_command(update: Update, context: CallbackContext):
         "/help - помощь\n"
     )
 
-def main():
+async def main():
     # Создание объекта Application и передача токена
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
@@ -70,8 +71,14 @@ def main():
     
     # Обработчик текстовых сообщений для расчета стоимости
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
+    
     # Запуск бота
+    await application.run_polling()
+
+if __name__ == '__main__':
+    import asyncio
+    asyncio.run(main())
+
     application.run_polling()
 
 if __name__ == '__main__':
