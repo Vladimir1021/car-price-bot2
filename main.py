@@ -1,9 +1,10 @@
 import os
 import openai
 import requests
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
+import nest_asyncio
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -19,19 +20,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Марка\nМодель\nГод выпуска\nОбъем двигателя (в литрах)\n\n"
         "Пример:\nToyota Camry\n2020\n2.5"
     )
-    await update.message.reply_text(message)
+    keyboard = [["Уточнить данные"]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(message, reply_markup=reply_markup)
 
-# Расчёт стоимости авто
+# Помощь
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Просто введите параметры автомобиля, и я рассчитаю стоимость. Напишите /start для начала.")
+
+# Запрос к GPT для расчета
+async def query_gpt(prompt: str) -> str:
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "Ты эксперт по автопошлинам и импорту авто из Китая в Россию."},
+            {"role": "user", "content": prompt},
+        ]
+    )
+    return response.choices[0].message.content.strip()
+
+# Обработка текста от пользователя
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
-    lines = text.split("\n")
 
+    if text.lower() in ["уточнить данные"]:
+        await update.message.reply_text("Хорошо, введите данные заново в формате:\nМарка\nМодель\nГод выпуска\nОбъем двигателя (л)")
+        return
+
+    lines = text.split("\n")
     if len(lines) < 4:
         await update.message.reply_text("Пожалуйста, введите все четыре параметра.")
         return
 
-    brand = lines[0]
-    model = lines[1]
+    brand, model = lines[0], lines[1]
     try:
         year = int(lines[2])
         engine_liters = float(lines[3].replace(",", "."))
@@ -39,38 +60,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Год выпуска и объем двигателя должны быть числами.")
         return
 
-    # Уменьшаем объём на 2 см³ по инструкции
     engine_cm3 = int(engine_liters * 1000) - 2
 
-    # Средняя цена — пока заглушка (можно потом заменить на запрос на сайт)
-    car_price_cny = 89800
-    exchange_rate = 13
-    car_price_rub = car_price_cny * exchange_rate
-
-    # Примерная пошлина (20% от стоимости)
-    customs_fee = 0.2 * car_price_rub
-
-    # Дополнительные расходы (заглушки)
-    delivery = 80000
-    inspection = 10000
-    invoice_commission = 15000
-    recycling_fee = 5200
-
-    final_price = car_price_rub + customs_fee + delivery + inspection + invoice_commission + recycling_fee
-
-    response = (
-        f"Марка: {brand}\nМодель: {model}\nГод выпуска: {year}\nОбъём: {engine_liters} л ({engine_cm3} см³)\n\n"
-        f"Средняя цена в Китае: {car_price_cny} ¥ → {car_price_rub:.0f} ₽\n"
-        f"Таможенная пошлина: {customs_fee:.0f} ₽\n"
-        f"Доставка: {delivery} ₽\nПроверка: {inspection} ₽\nКомиссия за инвойс: {invoice_commission} ₽\nУтилизационный сбор: {recycling_fee} ₽\n\n"
-        f"Итоговая стоимость: {final_price:.0f} ₽"
+    gpt_prompt = (
+        f"Рассчитай стоимость автомобиля, импортируемого из Китая в Россию.\n"
+        f"Марка: {brand}\nМодель: {model}\nГод выпуска: {year}\nОбъем двигателя: {engine_liters} л ({engine_cm3} см³).\n"
+        "Укажи стоимость в юанях и рублях, пошлину, доставку, проверку, утилизационный сбор, комиссии и итоговую сумму."
     )
 
-    await update.message.reply_text(response)
-
-# Помощь
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Просто введите параметры автомобиля, и я рассчитаю стоимость. Напишите /start для начала.")
+    try:
+        result = await query_gpt(gpt_prompt)
+        await update.message.reply_text(result)
+    except Exception as e:
+        await update.message.reply_text("Ошибка при обращении к GPT. Попробуйте позже.")
+        print("GPT ERROR:", e)
 
 async def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
@@ -86,6 +89,5 @@ if __name__ == "__main__":
     try:
         asyncio.get_event_loop().run_until_complete(main())
     except RuntimeError:
-        import nest_asyncio
         nest_asyncio.apply()
         asyncio.get_event_loop().run_until_complete(main())
