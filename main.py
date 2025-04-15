@@ -43,12 +43,7 @@ async def get_car_price_from_gpt(brand, model, year):
             temperature=0.4,
             max_tokens=20,
         )
-        # Логирование ответа для отладки
-        print("GPT Response:", response)
-        
-        # Правильный доступ к содержимому
-        price_str = response['choices'][0]['message']['content'].strip().replace("¥", "").replace(",", "")
-        print(f"Parsed price: {price_str}")  # Логирование парсинга
+        price_str = response.choices[0].message.content.strip().replace("¥", "").replace(",", "")
         return float(price_str)
     except Exception as e:
         print(f"GPT ERROR: {e}")  # Логирование ошибки GPT
@@ -102,13 +97,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Просто введите параметры автомобиля, и я рассчитаю стоимость. Напишите /start для начала.")
 
 async def main():
+    # Получаем переменную окружения для порта
+    port = int(os.getenv("PORT", 8000))
+
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    await application.run_polling()
+    await application.run_polling(port=port)  # Добавляем порт для корректной работы
 
 if __name__ == "__main__":
     asyncio.run(main())  # используем asyncio.run для запуска основного приложения
