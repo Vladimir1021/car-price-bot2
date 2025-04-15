@@ -4,6 +4,11 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
+import asyncio
+import nest_asyncio  # Импортируем nest_asyncio
+
+# Применяем nest_asyncio, чтобы избежать ошибок с циклом событий
+nest_asyncio.apply()  # Это позволит использовать один цикл событий
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -41,7 +46,7 @@ async def get_car_price_from_gpt(brand, model, year):
         price_str = response.choices[0].message.content.strip().replace("¥", "").replace(",", "")
         return float(price_str)
     except Exception as e:
-        print(f"Ошибка при запросе к GPT: {e}")
+        print(f"GPT ERROR: {e}")  # Логирование ошибки GPT
         return 89800  # fallback на заглушку
 
 # Расчёт стоимости авто
@@ -101,10 +106,4 @@ async def main():
     await application.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    try:
-        asyncio.get_event_loop().run_until_complete(main())
-    except RuntimeError:
-        import nest_asyncio
-        nest_asyncio.apply()
-        asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())  # используем asyncio.run для запуска основного приложения
