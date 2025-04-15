@@ -43,7 +43,12 @@ async def get_car_price_from_gpt(brand, model, year):
             temperature=0.4,
             max_tokens=20,
         )
-        price_str = response.choices[0].message.content.strip().replace("¥", "").replace(",", "")
+        # Логирование ответа для отладки
+        print("GPT Response:", response)
+        
+        # Правильный доступ к содержимому
+        price_str = response['choices'][0]['message']['content'].strip().replace("¥", "").replace(",", "")
+        print(f"Parsed price: {price_str}")  # Логирование парсинга
         return float(price_str)
     except Exception as e:
         print(f"GPT ERROR: {e}")  # Логирование ошибки GPT
